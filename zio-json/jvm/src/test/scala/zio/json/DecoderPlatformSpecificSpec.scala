@@ -252,6 +252,43 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
               assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
               assert(lines(1))(equalTo(Event(1603669876, "world")))
             }
+          },
+          test("readJsonArrayAs reads from files") {
+            import logEvent._
+
+            for {
+              lines <- readJsonArrayAs[Event](Paths.get("zio-json/jvm/src/test/resources/test_array.json")).runCollect
+            } yield {
+              assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
+              assert(lines(1))(equalTo(Event(1603669876, "world"))) &&
+              assert(lines(2))(equalTo(Event(1603669877, "array")))
+            }
+          },
+          test("readJsonArrayAs reads from URLs") {
+            import logEvent._
+
+            val url = this.getClass.getClassLoader.getResource("test_array.json")
+
+            for {
+              lines <- readJsonArrayAs[Event](url).runCollect
+            } yield {
+              assert(lines(0))(equalTo(Event(1603669875, "hello"))) &&
+              assert(lines(1))(equalTo(Event(1603669876, "world"))) &&
+              assert(lines(2))(equalTo(Event(1603669877, "array")))
+            }
+          },
+          test("readJsonArrayAs reads empty arrays") {
+            import logEvent._
+
+            val emptyArrayPath = Paths.get("zio-json/jvm/src/test/resources/empty_array.json")
+
+            for {
+              _     <- ZIO.attemptBlocking(java.nio.file.Files.write(emptyArrayPath, "[]".getBytes))
+              lines <- readJsonArrayAs[Event](emptyArrayPath).runCollect
+              _     <- ZIO.attemptBlocking(java.nio.file.Files.delete(emptyArrayPath))
+            } yield {
+              assert(lines)(isEmpty)
+            }
           }
         ),
         suite("combinators")(
