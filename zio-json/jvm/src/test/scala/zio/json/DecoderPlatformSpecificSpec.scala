@@ -289,6 +289,20 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
             } yield {
               assert(lines)(isEmpty)
             }
+          },
+          test("readJsonArrayAs reads real-world competitions.json") {
+            import competitionData._
+
+            for {
+              competitions <- readJsonArrayAs[Competition](
+                                Paths.get("zio-json/jvm/src/test/resources/competitions.json")
+                              ).runCollect
+            } yield {
+              assert(competitions.nonEmpty)(isTrue) &&
+              assert(competitions.head.competition_id)(equalTo(9)) &&
+              assert(competitions.head.country_name)(equalTo("Germany")) &&
+              assert(competitions.head.competition_name)(equalTo("1. Bundesliga"))
+            }
           }
         ),
         suite("combinators")(
@@ -431,5 +445,24 @@ object DecoderPlatformSpecificSpec extends ZIOSpecDefault {
 
     implicit val eventDecoder: JsonDecoder[Event] = DeriveJsonDecoder.gen[Event]
     implicit val eventEncoder: JsonEncoder[Event] = DeriveJsonEncoder.gen[Event]
+  }
+
+  object competitionData {
+    case class Competition(
+      competition_id: Int,
+      season_id: Int,
+      country_name: String,
+      competition_name: String,
+      competition_gender: String,
+      competition_youth: Boolean,
+      competition_international: Boolean,
+      season_name: String,
+      match_updated: Option[String],
+      match_updated_360: Option[String],
+      match_available_360: Option[String],
+      match_available: Option[String]
+    )
+
+    implicit val competitionDecoder: JsonDecoder[Competition] = DeriveJsonDecoder.gen[Competition]
   }
 }
